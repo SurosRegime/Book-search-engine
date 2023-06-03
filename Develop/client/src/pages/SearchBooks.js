@@ -5,11 +5,14 @@ import {
   Form,
   Button,
   Card,
-  Row
+  Row,
+  Jumbotron
 } from 'react-bootstrap';
 
 import Auth from '../utils/auth';
-import { saveBook, searchGoogleBooks } from '../utils/API';
+import { useMutation } from "@apollo/client";
+import { SAVE_BOOK } from "../utils/mutations";
+import { searchGoogleBooks } from '../utils/API';
 import { saveBookIds, getSavedBookIds } from '../utils/localStorage';
 
 const SearchBooks = () => {
@@ -21,6 +24,7 @@ const SearchBooks = () => {
   // create state to hold saved bookId values
   const [savedBookIds, setSavedBookIds] = useState(getSavedBookIds());
 
+  const [saveBook, { error }] = useMutation(SAVE_BOOK);
   // set up useEffect hook to save `savedBookIds` list to localStorage on component unmount
   // learn more here: https://reactjs.org/docs/hooks-effect.html#effects-with-cleanup
   useEffect(() => {
@@ -72,11 +76,11 @@ const SearchBooks = () => {
     }
 
     try {
-      const response = await saveBook(bookToSave, token);
+      const { data } = await saveBook({
+        variables: { bookData: { ...bookToSave } },
+      });
 
-      if (!response.ok) {
-        throw new Error('something went wrong!');
-      }
+      console.log(savedBookIds);
 
       // if book successfully saves to user's account, save book id to state
       setSavedBookIds([...savedBookIds, bookToSave.bookId]);
@@ -87,11 +91,11 @@ const SearchBooks = () => {
 
   return (
     <>
-      <div className='text-light bg-dark pt-5'>
+      <Jumbotron fluid className='text-light bg-dark pt-5'>
         <Container>
           <h1>Search for Books!</h1>
           <Form onSubmit={handleFormSubmit}>
-            <Row>
+            <Form.Row>
               <Col xs={12} md={8}>
                 <Form.Control
                   name='searchInput'
@@ -107,10 +111,10 @@ const SearchBooks = () => {
                   Submit Search
                 </Button>
               </Col>
-            </Row>
+            </Form.Row>
           </Form>
         </Container>
-      </div>
+      </Jumbotron>
 
       <Container>
         <h2 className='pt-5'>
@@ -118,10 +122,9 @@ const SearchBooks = () => {
             ? `Viewing ${searchedBooks.length} results:`
             : 'Search for a book to begin'}
         </h2>
-        <Row>
+        <CardColumns>
           {searchedBooks.map((book) => {
-            return (
-              <Col md="4">
+            return (              
                 <Card key={book.bookId} border='dark'>
                   {book.image ? (
                     <Card.Img src={book.image} alt={`The cover for ${book.title}`} variant='top' />
@@ -141,11 +144,10 @@ const SearchBooks = () => {
                       </Button>
                     )}
                   </Card.Body>
-                </Card>
-              </Col>
+                </Card>              
             );
           })}
-        </Row>
+        </CardColumns>
       </Container>
     </>
   );
